@@ -551,7 +551,13 @@ router.get("/quiz/:classId", (req, res) => {
 // });
 
 router.post("/submit", async (req, res) => {
-  const { email, answers, class: className } = req.body;
+  // const { email, answers, class: className } = req.body;
+  const { identifier, answers, class: className } = req.body;
+
+
+   if (!identifier || !answers || !className) {
+    return res.status(400).json({ message: "Identifier, class, and answers are required." });
+  }
 
   const questions = getQuestions(className);
   if (questions.length === 0) {
@@ -559,7 +565,13 @@ router.post("/submit", async (req, res) => {
   }
 
   try {
-    const user = await Booking.findOne({ email });
+    // const user = await Booking.findOne({ email });
+    const user = await Booking.findOne({
+      $or: [
+        { email: identifier.toLowerCase().trim() },
+        { mobileNumber: identifier.trim() }
+      ]
+    });
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }

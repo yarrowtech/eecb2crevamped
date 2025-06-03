@@ -53,12 +53,12 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  email: {
+email: {
     type: String,
-    unique: true,
-  required: true,
-  lowercase: true, // Normalize email casing
-  trim: true
+    // unique: true,
+  // required: true,
+  // lowercase: true,
+  // trim: true,
   },
   class: {
     type: String,
@@ -73,6 +73,19 @@ const bookingSchema = new mongoose.Schema({
     required: true,
   },
 
+   referralCode: {
+    type: String,
+    unique: true,
+    required: true,
+  },
+  referredBy: {
+    type: String, // referralCode of the referrer
+    default: null,
+  },
+  rewardPoints: {
+    type: Number,
+    default: 0,
+  },
   // Profile fields
 
   profileImage: { type: String, default: "" },
@@ -98,13 +111,27 @@ unlockedLevels: {
     advanced: { type: Number, default: 0 }
   },
 
-   survey: {
-    q1: { type: Boolean },
-    q2: { type: Boolean },
-    q3: { type: Boolean },
-    q4: { type: Boolean },
-    submittedAt: { type: Date },
-  },
+  //  survey: {
+  //   q1: { type: Boolean },
+  //   q2: { type: Boolean },
+  //   q3: { type: Boolean },
+  //   q4: { type: Boolean },
+  //   submittedAt: { type: Date },
+  // },
+
+  survey: {
+  q1: String,
+  q2: String,
+  q3: String,
+  q4: String,
+  q5: String,
+  q6: String,
+  q7: String,
+  q8: String,
+  q9: String,
+  q10: String,
+  submittedAt: Date,
+},
 
 resetPasswordToken: {
   type: String,

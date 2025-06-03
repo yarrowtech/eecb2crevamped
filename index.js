@@ -20,14 +20,14 @@ app.use(cors());
 
 
 
-app.use(express.static("C:/Users/Backend Developer/Downloads/eecb2c/eecb2c/frontend"));
+app.use(express.static("C:\Users\Backend Developer\eecb2crevamped\frontend"));
 console.log("Serving static files from:", path.join(__dirname, "frontend"));
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 
 // Connect to MongoDB
-mongoose.connect('mongodb+srv://electroniceducaresales:ivhPpPPzvM3FdhZR@cluster0.bllrjfi.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
+mongoose.connect('mongodb+srv://supriyonag552:ahy7BxxpZHAtslK7@cluster0.ldoppfe.mongodb.net/free-session-booking?retryWrites=true&w=majority&appName=Cluster0', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });

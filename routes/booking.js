@@ -127,6 +127,83 @@
 // module.exports = router;
 
 
+// const express = require("express");
+// const router = express.Router();
+// const bcrypt = require("bcryptjs");
+// const Booking = require("../models/Booking");
+// const sendEmail = require('../utils/sendMail');
+// const crypto = require("crypto");
+
+
+// router.post("/book-session", async (req, res) => {
+//   const {
+//     childName,
+//     mobileNumber,
+//     email,
+//     class: userClass,
+//     state,
+//     password,
+//     confirmPassword,
+//   } = req.body;
+
+//   if (password !== confirmPassword) {
+//     return res.status(400).json({ message: "Passwords do not match." });
+//   }
+
+//   try {
+
+//     const existingUser = await Booking.findOne({ email: email.toLowerCase().trim() });
+//     if (existingUser) {
+//       return res.status(400).json({ message: "Email already exists." });
+//     }
+
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     const newBooking = new Booking({
+//       childName,
+//       mobileNumber,
+//       email,
+//       class: userClass,
+//       state,
+//       password: hashedPassword,
+//     });
+
+//     await newBooking.save();
+//     res.status(201).json({ message: "Session booked successfully!" });
+//   } catch (err) {
+//     res.status(500).json({ message: "Error booking session", error: err.message });
+//   }
+// });
+
+
+// router.post("/login", async (req, res) => {
+//   const { email, password } = req.body;
+
+//   try {
+//     const user = await Booking.findOne({ email });
+//     if (!user) {
+//       return res.status(401).json({ message: "Invalid email or password." });
+//     }
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       return res.status(401).json({ message: "Invalid email or password." });
+//     }
+
+//     res.status(200).json({
+//       message: "Login successful",
+//       user: {
+//         childName: user.childName,
+//         email: user.email,
+//         class: user.class,
+//         state: user.state,
+//       },
+//     });
+//   } catch (err) {
+//     res.status(500).json({ message: "Login failed", error: err.message });
+//   }
+// });
+
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
@@ -134,8 +211,13 @@ const Booking = require("../models/Booking");
 const sendEmail = require('../utils/sendMail');
 const crypto = require("crypto");
 
+// Helper function to generate referral code
+const generateReferralCode = () => {
+  return crypto.randomBytes(4).toString("hex"); // 8 character hex code
+};
+
 // @route   POST /api/book-session
-// @desc    Book a free session
+// @desc    Book a free session with optional referral code
 router.post("/book-session", async (req, res) => {
   const {
     childName,
@@ -145,6 +227,7 @@ router.post("/book-session", async (req, res) => {
     state,
     password,
     confirmPassword,
+    referralCode: referralCodeInput,
   } = req.body;
 
   if (password !== confirmPassword) {
@@ -152,13 +235,27 @@ router.post("/book-session", async (req, res) => {
   }
 
   try {
+    // Check if user email already exists
+    // if (email) {
+    //   const existingUser = await Booking.findOne({ email: email.toLowerCase().trim() });
+    //   if (existingUser) {
+    //     return res.status(400).json({ message: "Email already exists." });
+    //   }
+    // }
 
-    const existingUser = await Booking.findOne({ email: email.toLowerCase().trim() });
-    if (existingUser) {
-      return res.status(400).json({ message: "Email already exists." });
+    // Validate referral code if provided
+    let referrer = null;
+    if (referralCodeInput) {
+      referrer = await Booking.findOne({ referralCode: referralCodeInput.trim() });
+      if (!referrer) {
+        return res.status(400).json({ message: "Invalid referral code." });
+      }
     }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
+    // Generate referral code for this new user
+    const referralCode = generateReferralCode();
 
     const newBooking = new Booking({
       childName,
@@ -167,10 +264,28 @@ router.post("/book-session", async (req, res) => {
       class: userClass,
       state,
       password: hashedPassword,
+      referralCode,
+      referredBy: referralCodeInput ? referralCodeInput.trim() : null,
+      rewardPoints: 0,
     });
 
+    // Save new user first
     await newBooking.save();
-    res.status(201).json({ message: "Session booked successfully!" });
+
+    // If referred, update reward points for both users
+    if (referrer) {
+      referrer.rewardPoints += 10; // referrer gets 10 points
+      newBooking.rewardPoints += 10; // referee (new user) gets 10 points
+
+      // Save updated reward points
+      await referrer.save();
+      await newBooking.save();
+    }
+
+    res.status(201).json({ 
+      message: "Session booked successfully!", 
+      referralCode // return the user's referral code to share 
+    });
   } catch (err) {
     res.status(500).json({ message: "Error booking session", error: err.message });
   }
@@ -179,13 +294,20 @@ router.post("/book-session", async (req, res) => {
 // @route   POST /api/login
 // @desc    Login with email and password
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  // const { email, password } = req.body;
+  const { identifier, password } = req.body; 
+
+  // try {
+  //   const user = await Booking.findOne({ email: email.toLowerCase().trim() });
+  //   if (!user) {
+  //     return res.status(401).json({ message: "Invalid email or password." });
+  //   }
+
 
   try {
-    const user = await Booking.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ message: "Invalid email or password." });
-    }
+    const user = await Booking.findOne({
+      $or: [{ email: identifier }, { mobileNumber: identifier }],
+    });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
@@ -197,8 +319,11 @@ router.post("/login", async (req, res) => {
       user: {
         childName: user.childName,
         email: user.email,
+        mobileNumber: user.mobileNumber,
         class: user.class,
         state: user.state,
+        rewardPoints: user.rewardPoints,
+        referralCode: user.referralCode,
       },
     });
   } catch (err) {

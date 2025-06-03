@@ -83,10 +83,36 @@ const upload = require("../middleware/upload");
 // @desc    Update profile by email
 
 
-router.post("/upload-profile-image/:email", upload.single("profileImage"), async (req, res) => {
+// router.post("/upload-profile-image/:email", upload.single("profileImage"), async (req, res) => {
+//   try {
+//     const updatedUser = await Booking.findOneAndUpdate(
+//       { email: req.params.email },
+//       { profileImage: req.file.path },
+//       { new: true }
+//     );
+
+//     if (!updatedUser) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     res.status(200).json({
+//       message: "Profile image uploaded successfully",
+//       user: updatedUser
+//     });
+//   } catch (error) {
+//     res.status(400).json({ message: "Image upload failed", error: error.message });
+//   }
+// });
+
+router.post("/upload-profile-image/:identifier", upload.single("profileImage"), async (req, res) => {
   try {
     const updatedUser = await Booking.findOneAndUpdate(
-      { email: req.params.email },
+      {
+        $or: [
+          { email: req.params.identifier },
+          { mobileNumber: req.params.identifier },
+        ],
+      },
       { profileImage: req.file.path },
       { new: true }
     );
@@ -105,13 +131,27 @@ router.post("/upload-profile-image/:email", upload.single("profileImage"), async
 });
 
 
-router.post("/profile/update/:email", async (req, res) => {
+
+// router.post("/profile/update/:email", async (req, res) => {
+//   try {
+//     const updatedUser = await Booking.findOneAndUpdate(
+//       { email: req.params.email },
+//       req.body,
+//       { new: true }
+//     );
+router.post("/profile/update/:identifier", async (req, res) => {
   try {
     const updatedUser = await Booking.findOneAndUpdate(
-      { email: req.params.email },
+      {
+        $or: [
+          { email: req.params.identifier },
+          { mobileNumber: req.params.identifier },
+        ],
+      },
       req.body,
       { new: true }
     );
+
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
@@ -135,9 +175,14 @@ router.post("/profile/update/:email", async (req, res) => {
 //   }
 // });
 
-router.get("/profile/view/:email", async (req, res) => {
+router.get("/profile/view/:identifier", async (req, res) => {
   try {
-    const user = await Booking.findOne({ email: req.params.email });
+  const user = await Booking.findOne({
+      $or: [
+        { email: req.params.identifier },
+        { mobileNumber: req.params.identifier },
+      ],
+    });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     // Prepend full URL to profileImage if it exists
