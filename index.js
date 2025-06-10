@@ -1,9 +1,11 @@
 const express = require('express');
+const http = require('http'); // Add this
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
+const socketIo = require('socket.io'); // Add this
 
 const bookingRoutes = require('./routes/booking');
 const userRoutes = require('./routes/userRoutes');
@@ -15,6 +17,13 @@ const paymentRoutes = require("./routes/payment");
 // Initialize Express app
 dotenv.config();
 const app = express();
+const server = http.createServer(app); // Wrap express in http server
+const io = socketIo(server, {
+  cors: {
+    origin: "*", // Allow frontend
+    methods: ["GET", "POST"]
+  }
+});
 app.use(bodyParser.json());
 app.use(cors());
 
@@ -44,6 +53,22 @@ app.use('/api', userRoutes);
 app.use("/api", quizRoutes);
 app.use("/api", surveyRoutes);
 app.use("/api", paymentRoutes);
+
+
+// Socket.IO logic
+io.on("connection", (socket) => {
+  console.log("New client connected:", socket.id);
+
+  socket.on("sendMessage", (data) => {
+    console.log("Message received:", data);
+    io.emit("receiveMessage", data); // broadcast to all users
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected:", socket.id);
+  });
+});
+
 
 // Start the server
 const PORT = 3000;

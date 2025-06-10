@@ -500,19 +500,48 @@ const router = express.Router();
 const Booking = require("../models/Booking");
 
 // Import questions directly from questions.js
-const { class1, class2, class3 } = require("../data/questions");
+const { class5, class6, class7, class8,class9,class10,class11,class12 } = require("../data/questions");
 
 // A function to get the questions based on the classId
 function getQuestions(classId) {
   const questionsMap = {
-    class1: class1,
-    class2: class2,
-    class3: class3
+    class5: class5,
+    class6: class6,
+    class7: class7,
+    class8: class8,
+    class9: class9,
+    class10: class10,
+    class11: class11,
+    class12: class12
   };
 
   return questionsMap[classId] || [];
 }
 
+
+// Utility: Shuffle array using Fisher-Yates algorithm
+function shuffleArray(array) {
+  const shuffled = [...array]; // Clone array to avoid mutation
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+// router.get("/quiz/:classId", (req, res) => {
+//   const { classId } = req.params;
+//   const questions = getQuestions(classId);
+
+//   if (questions.length === 0) {
+//     return res.status(404).json({ error: "Questions not found." });
+//   }
+
+//   return res.json(questions);
+// });
+
+
+// GET /quiz/:classId - Fetch shuffled questions for a class
 router.get("/quiz/:classId", (req, res) => {
   const { classId } = req.params;
   const questions = getQuestions(classId);
@@ -521,7 +550,8 @@ router.get("/quiz/:classId", (req, res) => {
     return res.status(404).json({ error: "Questions not found." });
   }
 
-  return res.json(questions);
+  const shuffledQuestions = shuffleArray(questions);
+  return res.json(shuffledQuestions);
 });
 
 // router.post("/submit", async (req, res) => {
